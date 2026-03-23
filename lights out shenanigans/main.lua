@@ -225,7 +225,7 @@ if REPENTOGON then
   --   gauss jordan elimination to put the matrix in reduced row echelon form, check the final column
   -- gaussian elimination is slightly faster but the timescale is ridiculously small
   -- gauss jordan elimination had simpler code so i used that
-  -- another youtube video showed solving this via network theory to find the minimum number of clicks
+  -- another youtube video showed solving this via network theory to find the optimal solution
   -- that would likely require pre-generating data and increasing the size of the mod
   function mod:doGaussJordanEliminationMod2(matrix)
     local numRows = #matrix
