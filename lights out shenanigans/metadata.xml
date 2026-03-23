@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+    <name>Lights Out Shenanigans</name>
+    <directory>lights out shenanigans</directory>
+    <id>3690428817</id>
+    <description>I decided to make another game to go with [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3652641151]Minesweeper Shenanigans[/url].
+
+This mod requires REPENTOGON. All boards are solvable. 2x2 and 4x4 are super easy if you need a place to start.
+
+There's an option to print a solution to the debug console if you get stuck. Click on all the 1s in any order to solve from the current state.
+
+More info: https://en.wikipedia.org/wiki/Lights_Out_(game)</description>
+    <version>1.1</version>
+    <visibility>Public</visibility>
+    <tag id="Lua"/>
+</metadata>
