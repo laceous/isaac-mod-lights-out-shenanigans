@@ -205,6 +205,11 @@ if REPENTOGON then
     end
     
     mod:doGaussJordanEliminationMod2(matrix)
+    --[[
+    for i = 1, #matrix do
+      print(table.concat(matrix[i], ' '))
+    end
+    --]]
     
     print('Solution (may not be optimal):')
     local solution = {}
@@ -213,7 +218,7 @@ if REPENTOGON then
     end
     for i = 1, h do
       local start = ((i - 1) * w) + 1
-      print(table.concat({ table.unpack(solution, start, start + w - 1) }, ' '))
+      print(table.concat(solution, ' ', start, start + w - 1))
     end
   end
   
@@ -225,6 +230,7 @@ if REPENTOGON then
   --   gauss jordan elimination to put the matrix in reduced row echelon form, check the final column
   -- gaussian elimination is slightly faster but the timescale is ridiculously small
   -- gauss jordan elimination had simpler code so i used that
+  -- 4x4/5x5/9x9 struggle to find the optimal solution using this method when you get to the final row
   -- another youtube video showed solving this via network theory to find the optimal solution
   -- that would likely require pre-generating data and increasing the size of the mod
   function mod:doGaussJordanEliminationMod2(matrix)
@@ -237,12 +243,9 @@ if REPENTOGON then
         pivot = pivot + 1
       end
       if pivot <= numRows then
-        -- swap rows if necessary
         if pivot ~= i then
           matrix[i], matrix[pivot] = matrix[pivot], matrix[i]
         end
-        
-        -- make the other rows contain 0s
         for j = 1, numRows do
           if j ~= i and matrix[j][i] == 1 then
             for k = 1, numCols do
