@@ -9,7 +9,17 @@ if REPENTOGON then
   mod.square = '\u{f45c}'
   mod.globalData = {}
   
-  mod.toggleClickedSquare = true
+  mod.pattern = {
+    topLeft = false,
+    top = true,
+    topRight = false,
+    left = true,
+    center = true,
+    right = true,
+    bottomLeft = false,
+    bottom = true,
+    bottomRight = false,
+  }
   mod.squareSize = 50 -- 40, 50, 60
   
   function mod:onModsLoaded()
@@ -48,9 +58,29 @@ if REPENTOGON then
     mod:setupBoard(9, 9)
     
     ImGui.AddElement('shenanigansTabLightsOutSettings', '', ImGuiElement.SeparatorText, 'Settings')
-    ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingToggle', 'Toggle clicked square', nil, { 'Off', 'On' }, mod.toggleClickedSquare and 1 or 0, true)
-    ImGui.AddCallback('shenanigansCmbLightsOutSettingToggle', ImGuiCallback.DeactivatedAfterEdit, function(i)
-      mod.toggleClickedSquare = i == 1
+    ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingShape', 'Shape', nil, { '+', 'x' }, 0, true)
+    ImGui.AddCallback('shenanigansCmbLightsOutSettingShape', ImGuiCallback.DeactivatedAfterEdit, function(_, s)
+      if s == '+' then
+        mod.pattern.topLeft = false
+        mod.pattern.top = true
+        mod.pattern.topRight = false
+        mod.pattern.left = true
+        mod.pattern.center = true
+        mod.pattern.right = true
+        mod.pattern.bottomLeft = false
+        mod.pattern.bottom = true
+        mod.pattern.bottomRight = false
+      else -- x
+        mod.pattern.topLeft = true
+        mod.pattern.top = false
+        mod.pattern.topRight = true
+        mod.pattern.left = false
+        mod.pattern.center = true
+        mod.pattern.right = false
+        mod.pattern.bottomLeft = true
+        mod.pattern.bottom = false
+        mod.pattern.bottomRight = true
+      end
       for _, v in ipairs({
                           { w = 2, h = 2 },
                           { w = 3, h = 3 },
@@ -66,7 +96,7 @@ if REPENTOGON then
         mod:resetSquares(mod.globalData[s], s, v.w, v.h)
       end
     end)
-    ImGui.SetHelpmarker('shenanigansCmbLightsOutSettingToggle', 'Changing this will reset your boards')
+    ImGui.SetHelpmarker('shenanigansCmbLightsOutSettingShape', 'Changing this will reset your boards')
     ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingSize', 'Size', nil, { 40, 50, 60 }, 1, true)
     ImGui.AddCallback('shenanigansCmbLightsOutSettingSize', ImGuiCallback.DeactivatedAfterEdit, function(_, s)
       mod.squareSize = tonumber(s)
@@ -146,27 +176,33 @@ if REPENTOGON then
     mod:resetSquares(data, s, w, h)
   end
   
+  -- we want a solvable state after calling this function
+  -- depending on the pattern, we might need to do something different here
+  -- not all patterns support having all squares filled in at the start
+  -- e.g. with a + pattern on an odd NxN board, if we don't toggle the clicked square then we need to leave the board's center square empty
   function mod:resetSquares(data, s, w, h)
     local total = w * h
     for i = 1, total do
-      -- this if statement makes sure that odd NxN boards are still solvable if not toggling the clicked square
-      if not mod.toggleClickedSquare and total % 2 == 1 and math.ceil(total / 2) == i then
-        data[i] = false
-        ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. i, '')
-      else
-        data[i] = true
-        ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. i, mod.square)
-      end
+      data[i] = true
+      ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. i, mod.square)
     end
   end
   
   function mod:toggleSquares(data, i, s, w, h)
+    local hasSquareLeft = mod:hasSquareLeft(i, w, h)
+    local hasSquareRight = mod:hasSquareRight(i, w, h)
+    local hasSquareUp = mod:hasSquareUp(i, w, h)
+    local hasSquareDown = mod:hasSquareDown(i, w, h)
     for _, v in ipairs({
-                        { cond = mod.toggleClickedSquare    , idx = i },
-                        { cond = mod:hasSquareLeft(i, w, h) , idx = i - 1 },
-                        { cond = mod:hasSquareRight(i, w, h), idx = i + 1 },
-                        { cond = mod:hasSquareUp(i, w, h)   , idx = i - w },
-                        { cond = mod:hasSquareDown(i, w, h) , idx = i + w },
+                        { cond = mod.pattern.topLeft and hasSquareUp and hasSquareLeft, idx = i - w - 1 },
+                        { cond = mod.pattern.top and hasSquareUp, idx = i - w },
+                        { cond = mod.pattern.topRight and hasSquareUp and hasSquareRight, idx = i - w + 1 },
+                        { cond = mod.pattern.left and hasSquareLeft, idx = i - 1 },
+                        { cond = mod.pattern.center, idx = i },
+                        { cond = mod.pattern.right and hasSquareRight, idx = i + 1 },
+                        { cond = mod.pattern.bottomLeft and hasSquareDown and hasSquareLeft, idx = i + w - 1 },
+                        { cond = mod.pattern.bottom and hasSquareDown, idx = i + w },
+                        { cond = mod.pattern.bottomRight and hasSquareDown and hasSquareRight, idx = i + w + 1 },
                       })
     do
       if v.cond then
@@ -187,12 +223,20 @@ if REPENTOGON then
       table.insert(matrix, {})
     end
     for i = 1, total do
+      local hasSquareLeft = mod:hasSquareLeft(i, w, h)
+      local hasSquareRight = mod:hasSquareRight(i, w, h)
+      local hasSquareUp = mod:hasSquareUp(i, w, h)
+      local hasSquareDown = mod:hasSquareDown(i, w, h)
       for j = 1, total do
-        if (mod.toggleClickedSquare and j == i) or
-           (mod:hasSquareLeft(i, w, h) and j == i - 1) or
-           (mod:hasSquareRight(i, w, h) and j == i + 1) or
-           (mod:hasSquareUp(i, w, h) and j == i - w) or
-           (mod:hasSquareDown(i, w, h) and j == i + w)
+        if (mod.pattern.topLeft and hasSquareUp and hasSquareLeft and j == i - w - 1) or
+           (mod.pattern.top and hasSquareUp and j == i - w) or
+           (mod.pattern.topRight and hasSquareUp and hasSquareRight and j == i - w + 1) or
+           (mod.pattern.left and hasSquareLeft and j == i - 1) or
+           (mod.pattern.center and j == i) or
+           (mod.pattern.right and hasSquareRight and j == i + 1) or
+           (mod.pattern.bottomLeft and hasSquareDown and hasSquareLeft and j == i + w - 1) or
+           (mod.pattern.bottom and hasSquareDown and j == i + w) or
+           (mod.pattern.bottomRight and hasSquareDown and hasSquareRight and j == i + w + 1)
         then
           matrix[i][j] = 1
         else
