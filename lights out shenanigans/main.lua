@@ -7,6 +7,8 @@ local sfx = SFXManager()
 if REPENTOGON then
   mod.rngShiftIdx = 35
   mod.square = '\u{f45c}'
+  mod.diamond = '\u{f219}'
+  mod.shape = mod.square
   mod.globalData = {}
   
   mod.pattern = {
@@ -70,6 +72,7 @@ if REPENTOGON then
         mod.pattern.bottomLeft = false
         mod.pattern.bottom = true
         mod.pattern.bottomRight = false
+        mod.shape = mod.square
       else -- x
         mod.pattern.topLeft = true
         mod.pattern.top = false
@@ -80,6 +83,7 @@ if REPENTOGON then
         mod.pattern.bottomLeft = true
         mod.pattern.bottom = false
         mod.pattern.bottomRight = true
+        mod.shape = mod.diamond
       end
       for _, v in ipairs({
                           { w = 2, h = 2 },
@@ -160,7 +164,7 @@ if REPENTOGON then
         i = i + 1
         local iLocal = i
         local btnId = 'shenanigansBtn' .. s .. '_' .. iLocal
-        ImGui.AddButton(tab, btnId, mod.square, function()
+        ImGui.AddButton(tab, btnId, mod.shape, function()
           mod:toggleSquares(data, iLocal, s, w, h)
           if mod:isSuccess(data) then
             ImGui.PushNotification('You win!', ImGuiNotificationType.SUCCESS, 5000)
@@ -184,7 +188,7 @@ if REPENTOGON then
     local total = w * h
     for i = 1, total do
       data[i] = true
-      ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. i, mod.square)
+      ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. i, mod.shape)
     end
   end
   
@@ -208,7 +212,7 @@ if REPENTOGON then
       if v.cond then
         data[v.idx] = not data[v.idx]
         if data[v.idx] then
-          ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. v.idx, mod.square)
+          ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. v.idx, mod.shape)
         else
           ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. v.idx, '')
         end
