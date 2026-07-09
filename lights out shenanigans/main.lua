@@ -60,8 +60,8 @@ if REPENTOGON then
     mod:setupBoard(9, 9)
     
     ImGui.AddElement('shenanigansTabLightsOutSettings', '', ImGuiElement.SeparatorText, 'Settings')
-    ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingShape', 'Shape', nil, { '+', 'x' }, 0, true)
-    ImGui.AddCallback('shenanigansCmbLightsOutSettingShape', ImGuiCallback.DeactivatedAfterEdit, function(_, s)
+    ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingPattern', 'Pattern', nil, { '+', 'x' }, 0, true)
+    ImGui.AddCallback('shenanigansCmbLightsOutSettingPattern', ImGuiCallback.DeactivatedAfterEdit, function(_, s)
       if s == '+' then
         mod.pattern.topLeft = false
         mod.pattern.top = true
@@ -100,7 +100,7 @@ if REPENTOGON then
         mod:resetSquares(mod.globalData[s], s, v.w, v.h)
       end
     end)
-    ImGui.SetHelpmarker('shenanigansCmbLightsOutSettingShape', 'Changing this will reset your boards')
+    ImGui.SetHelpmarker('shenanigansCmbLightsOutSettingPattern', 'Changing this will reset your boards')
     ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingSize', 'Size', nil, { 40, 50, 60 }, 1, true)
     ImGui.AddCallback('shenanigansCmbLightsOutSettingSize', ImGuiCallback.DeactivatedAfterEdit, function(_, s)
       mod.squareSize = tonumber(s)
