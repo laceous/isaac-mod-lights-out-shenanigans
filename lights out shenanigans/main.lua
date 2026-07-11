@@ -11,7 +11,7 @@ if REPENTOGON then
   mod.shape = mod.square
   mod.globalData = {}
   
-  mod.pattern = {
+  mod.pattern = { -- +
     topLeft = false,
     top = true,
     topRight = false,
@@ -60,14 +60,15 @@ if REPENTOGON then
     mod:setupBoard(9, 9)
     
     ImGui.AddElement('shenanigansTabLightsOutSettings', '', ImGuiElement.SeparatorText, 'Settings')
-    ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingPattern', 'Pattern', nil, { '+', 'x' }, 0, true)
+    ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingPattern', 'Pattern', nil, { '+ (ez)', '+', 'x' }, 1, true)
     ImGui.AddCallback('shenanigansCmbLightsOutSettingPattern', ImGuiCallback.DeactivatedAfterEdit, function(_, s)
-      if s == '+' then
+      -- the ez variant causes the light chasing algorithm to auto solve every board
+      if s == '+' or s == '+ (ez)' then
         mod.pattern.topLeft = false
         mod.pattern.top = true
         mod.pattern.topRight = false
         mod.pattern.left = true
-        mod.pattern.center = true
+        mod.pattern.center = s == '+'
         mod.pattern.right = true
         mod.pattern.bottomLeft = false
         mod.pattern.bottom = true
@@ -183,12 +184,21 @@ if REPENTOGON then
   -- we want a solvable state after calling this function
   -- depending on the pattern, we might need to do something different here
   -- not all patterns support having all squares filled in at the start
-  -- e.g. with a + pattern on an odd NxN board, if we don't toggle the clicked square then we need to leave the board's center square empty
   function mod:resetSquares(data, s, w, h)
     local total = w * h
     for i = 1, total do
-      data[i] = true
-      ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. i, mod.shape)
+      -- with a + pattern on an odd NxN board, if we don't toggle the clicked square then we need to leave the board's center square empty
+      if not mod.pattern.topLeft and mod.pattern.top and not mod.pattern.topRight and
+         mod.pattern.left and not mod.pattern.center and mod.pattern.right and
+         not mod.pattern.bottomLeft and mod.pattern.bottom and not mod.pattern.bottomRight and
+         total % 2 == 1 and math.ceil(total / 2) == i
+      then
+        data[i] = false
+        ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. i, '')
+      else
+        data[i] = true
+        ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. i, mod.shape)
+      end
     end
   end
   
