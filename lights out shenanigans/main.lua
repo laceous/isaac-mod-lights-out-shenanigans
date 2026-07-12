@@ -4,6 +4,7 @@ local sfx = SFXManager()
 -- tutorials:
 -- https://www.logicgamesonline.com/lightsout/tutorial.html
 -- https://github.com/robert-wallis/LightsOut-6x6-Trainer
+-- https://www.jaapsch.net/puzzles/lights.htm
 if REPENTOGON then
   mod.rngShiftIdx = 35
   mod.square = '\u{f45c}'
@@ -60,15 +61,15 @@ if REPENTOGON then
     mod:setupBoard(9, 9)
     
     ImGui.AddElement('shenanigansTabLightsOutSettings', '', ImGuiElement.SeparatorText, 'Settings')
-    ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingPattern', 'Pattern', nil, { '+ (ez)', '+', 'x' }, 1, true)
-    ImGui.AddCallback('shenanigansCmbLightsOutSettingPattern', ImGuiCallback.DeactivatedAfterEdit, function(_, s)
+    ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingPattern', 'Pattern', nil, { '\u{f0fe} (ez)', '\u{f0fe}', '\u{f2d3}', '\u{f2d3} (alt)' }, 1, true)
+    ImGui.AddCallback('shenanigansCmbLightsOutSettingPattern', ImGuiCallback.DeactivatedAfterEdit, function(i)
       -- the ez variant causes the light chasing algorithm to auto solve every board
-      if s == '+' or s == '+ (ez)' then
+      if i == 0 or i == 1 then -- +
         mod.pattern.topLeft = false
         mod.pattern.top = true
         mod.pattern.topRight = false
         mod.pattern.left = true
-        mod.pattern.center = s == '+'
+        mod.pattern.center = i == 1
         mod.pattern.right = true
         mod.pattern.bottomLeft = false
         mod.pattern.bottom = true
@@ -79,7 +80,7 @@ if REPENTOGON then
         mod.pattern.top = false
         mod.pattern.topRight = true
         mod.pattern.left = false
-        mod.pattern.center = true
+        mod.pattern.center = i == 2
         mod.pattern.right = false
         mod.pattern.bottomLeft = true
         mod.pattern.bottom = false
@@ -101,7 +102,7 @@ if REPENTOGON then
         mod:resetSquares(mod.globalData[s], s, v.w, v.h)
       end
     end)
-    ImGui.SetHelpmarker('shenanigansCmbLightsOutSettingPattern', 'Changing this will reset your boards')
+    ImGui.SetHelpmarker('shenanigansCmbLightsOutSettingPattern', 'Changing this will reset your boards\n(ez/alt: do not toggle clicked square)')
     ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingSize', 'Size', nil, { 40, 50, 60 }, 1, true)
     ImGui.AddCallback('shenanigansCmbLightsOutSettingSize', ImGuiCallback.DeactivatedAfterEdit, function(_, s)
       mod.squareSize = tonumber(s)
@@ -187,11 +188,27 @@ if REPENTOGON then
   function mod:resetSquares(data, s, w, h)
     local total = w * h
     for i = 1, total do
-      -- with a + pattern on an odd NxN board, if we don't toggle the clicked square then we need to leave the board's center square empty
-      if not mod.pattern.topLeft and mod.pattern.top and not mod.pattern.topRight and
-         mod.pattern.left and not mod.pattern.center and mod.pattern.right and
-         not mod.pattern.bottomLeft and mod.pattern.bottom and not mod.pattern.bottomRight and
-         total % 2 == 1 and math.ceil(total / 2) == i
+      if (
+           -- with a + pattern on an odd NxN board, if we don't toggle the clicked square then we need to leave the center square empty
+           not mod.pattern.topLeft and mod.pattern.top and not mod.pattern.topRight and
+           mod.pattern.left and not mod.pattern.center and mod.pattern.right and
+           not mod.pattern.bottomLeft and mod.pattern.bottom and not mod.pattern.bottomRight and
+           total % 2 == 1 and math.ceil(total / 2) == i
+         ) or
+         (
+           -- with an x pattern on 5x5 or 9x9, if we don't toggle the clicked square then we need to leave several squares empty
+           -- you can fill in two additional squares by toggling the following positions after this loop is complete:
+           --   total - math.floor(total / 2) - w - 1
+           --   total - math.floor(total / 2) + w + 1
+           mod.pattern.topLeft and not mod.pattern.top and mod.pattern.topRight and
+           not mod.pattern.left and not mod.pattern.center and not mod.pattern.right and
+           mod.pattern.bottomLeft and not mod.pattern.bottom and mod.pattern.bottomRight and
+           (w - 1) % 4 == 0 and -- assumes square board
+           (
+             (i + math.floor(w / 2)) % w == 0 or -- center column
+             (i >= total - math.floor(total / 2) - math.floor(w / 2) and i <= total - math.floor(total / 2) + math.floor(w / 2)) -- center row
+           )
+         )
       then
         data[i] = false
         ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. i, '')

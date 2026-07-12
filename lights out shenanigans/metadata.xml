@@ -12,7 +12,7 @@ There's an option to print a solution to the debug console if you get stuck. Cli
 More info: https://en.wikipedia.org/wiki/Lights_Out_(game)
 
 Update: You can change the pattern from a cross (+) to a cross (x).</description>
-    <version>1.8</version>
+    <version>1.9</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
 </metadata>
