@@ -135,6 +135,7 @@ if REPENTOGON then
     local btnResetId = 'shenanigansBtn' .. s .. 'Reset'
     local btnRandomId = 'shenanigansBtn' .. s .. 'Random'
     local btnPrintId = 'shenanigansBtn' .. s .. 'Print'
+    local btnHintId = 'shenanigansBtn' .. s .. 'Hint'
     
     ImGui.AddButton(tab, btnResetId, '\u{f0c8}', function()
       mod:resetSquares(data, s, w, h)
@@ -145,7 +146,7 @@ if REPENTOGON then
       -- there are unsolvable configurations, this makes sure that we are always in a solvable state
       local rand = Random()
       local rng = RNG(rand <= 0 and 1 or rand, mod.rngShiftIdx)
-      mod:resetSquares(data, s, w, h)
+      mod:resetSquares(data, s, w, h) -- we could also start with all empty squares
       repeat
         for i = 1, w * h do
           if rng:RandomFloat() < 0.5 then
@@ -156,7 +157,11 @@ if REPENTOGON then
     end, false)
     ImGui.AddElement(tab, '', ImGuiElement.SameLine, '')
     ImGui.AddButton(tab, btnPrintId, '\u{f02f}', function()
-      mod:printSolution(data, w, h)
+      mod:printSolution(data, w, h, false)
+    end, false)
+    ImGui.AddElement(tab, '', ImGuiElement.SameLine, '')
+    ImGui.AddButton(tab, btnHintId, '\u{f059}', function()
+      mod:printSolution(data, w, h, true)
     end, false)
     ImGui.AddElement(tab, 'shenanigansSep' .. s, ImGuiElement.Separator, '')
     
@@ -247,7 +252,7 @@ if REPENTOGON then
     end
   end
   
-  function mod:printSolution(data, w, h)
+  function mod:printSolution(data, w, h, hintOnly)
     local total = w * h
     local matrix = {}
     for i = 1, total do
@@ -286,10 +291,30 @@ if REPENTOGON then
     end
     --]]
     
-    print('Solution (may not be optimal):')
     local solution = {}
     for i = 1, total do
       table.insert(solution, matrix[i][total + 1])
+    end
+    if hintOnly then
+      local hints = {}
+      for i, v in ipairs(solution) do
+        if v ~= 0 then
+          table.insert(hints, i)
+        end
+      end
+      if #hints > 0 then
+        local rand = Random()
+        local rng = RNG(rand <= 0 and 1 or rand, mod.rngShiftIdx)
+        local hint = hints[rng:RandomInt(#hints) + 1]
+        for i = 1, #solution do
+          if i ~= hint then
+            solution[i] = 0
+          end
+        end
+      end
+      print('Hint (may not be optimal):')
+    else
+      print('Solution (may not be optimal):')
     end
     for i = 1, h do
       local start = ((i - 1) * w) + 1

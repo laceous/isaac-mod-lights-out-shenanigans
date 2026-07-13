@@ -9,10 +9,12 @@ This mod requires REPENTOGON. All boards are solvable. 2x2 and 4x4 are super eas
 
 There's an option to print a solution to the debug console if you get stuck. Click on all the 1's in any order to solve from the current state. The solution may not be optimal.
 
+The 4 buttons at the top-left of the board are: reset, shuffle/randomize, print solution, and hint (print one random position from the solution).
+
 More info: https://en.wikipedia.org/wiki/Lights_Out_(game)
 
 Update: You can change the pattern from a cross (+) to a cross (x).</description>
-    <version>1.9</version>
+    <version>1.10</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
 </metadata>
