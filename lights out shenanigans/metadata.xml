@@ -14,7 +14,7 @@ The 4 buttons at the top-left of the board are: reset, shuffle/randomize, print 
 More info: https://en.wikipedia.org/wiki/Lights_Out_(game)
 
 Update: You can change the pattern from a cross (+) to a cross (x).</description>
-    <version>1.10</version>
+    <version>1.11</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
 </metadata>

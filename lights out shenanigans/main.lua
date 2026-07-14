@@ -1,10 +1,12 @@
 local mod = RegisterMod('Lights Out Shenanigans', 1)
 local sfx = SFXManager()
 
+-- current rule set:
+--   2-state buttons, cross patterns, square boards, boards w/ edges
 -- tutorials:
--- https://www.logicgamesonline.com/lightsout/tutorial.html
--- https://github.com/robert-wallis/LightsOut-6x6-Trainer
--- https://www.jaapsch.net/puzzles/lights.htm
+--   https://www.logicgamesonline.com/lightsout/tutorial.html
+--   https://github.com/robert-wallis/LightsOut-6x6-Trainer
+--   https://www.jaapsch.net/puzzles/lights.htm
 if REPENTOGON then
   mod.rngShiftIdx = 35
   mod.square = '\u{f45c}'
@@ -24,6 +26,7 @@ if REPENTOGON then
     bottomRight = false,
   }
   mod.squareSize = 50 -- 40, 50, 60
+  mod.autoClear = false
   
   function mod:onModsLoaded()
     mod:setupImGui()
@@ -61,6 +64,10 @@ if REPENTOGON then
     mod:setupBoard(9, 9)
     
     ImGui.AddElement('shenanigansTabLightsOutSettings', '', ImGuiElement.SeparatorText, 'Settings')
+    ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingAutoClear', 'Auto clear', function(i)
+      mod.autoClear = i == 1
+    end, { 'Off', 'On' }, mod.autoClear and 1 or 0, true)
+    ImGui.SetHelpmarker('shenanigansCmbLightsOutSettingAutoClear', 'Automatically clear the debug console when you click the print solution or hint buttons')
     ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingPattern', 'Pattern', nil, { '\u{f0fe} (ez)', '\u{f0fe}', '\u{f2d3}', '\u{f2d3} (alt)' }, 1, true)
     ImGui.AddCallback('shenanigansCmbLightsOutSettingPattern', ImGuiCallback.DeactivatedAfterEdit, function(i)
       -- the ez variant causes the light chasing algorithm to auto solve every board
@@ -290,6 +297,10 @@ if REPENTOGON then
       print(table.concat(matrix[i], ' '))
     end
     --]]
+    
+    if mod.autoClear then
+      Isaac.ExecuteCommand('clear')
+    end
     
     local solution = {}
     for i = 1, total do
