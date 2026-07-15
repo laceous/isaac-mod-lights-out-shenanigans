@@ -2,7 +2,7 @@ local mod = RegisterMod('Lights Out Shenanigans', 1)
 local sfx = SFXManager()
 
 -- current rule set:
---   2-state buttons, cross patterns, square boards, boards w/ edges
+--   2-state buttons, cross patterns, square boards, boards w/ and w/o edges
 -- tutorials:
 --   https://www.logicgamesonline.com/lightsout/tutorial.html
 --   https://github.com/robert-wallis/LightsOut-6x6-Trainer
@@ -26,6 +26,7 @@ if REPENTOGON then
     bottomRight = false,
   }
   mod.squareSize = 50 -- 40, 50, 60
+  mod.boardHasEdges = true
   mod.autoClear = false
   
   function mod:onModsLoaded()
@@ -44,7 +45,6 @@ if REPENTOGON then
     ImGui.LinkWindowToElement('shenanigansWindowLightsOut', 'shenanigansMenuItemLightsOut')
     
     ImGui.AddTabBar('shenanigansWindowLightsOut', 'shenanigansTabBarLightsOut')
-    ImGui.AddTab('shenanigansTabBarLightsOut', 'shenanigansTabLightsOut2x2', '2x2')
     ImGui.AddTab('shenanigansTabBarLightsOut', 'shenanigansTabLightsOut3x3', '3x3')
     ImGui.AddTab('shenanigansTabBarLightsOut', 'shenanigansTabLightsOut4x4', '4x4')
     ImGui.AddTab('shenanigansTabBarLightsOut', 'shenanigansTabLightsOut5x5', '5x5')
@@ -54,7 +54,6 @@ if REPENTOGON then
     ImGui.AddTab('shenanigansTabBarLightsOut', 'shenanigansTabLightsOut9x9', '9x9')
     ImGui.AddTab('shenanigansTabBarLightsOut', 'shenanigansTabLightsOutSettings', 'Settings')
     
-    mod:setupBoard(2, 2)
     mod:setupBoard(3, 3)
     mod:setupBoard(4, 4)
     mod:setupBoard(5, 5)
@@ -68,34 +67,35 @@ if REPENTOGON then
       mod.autoClear = i == 1
     end, { 'Off', 'On' }, mod.autoClear and 1 or 0, true)
     ImGui.SetHelpmarker('shenanigansCmbLightsOutSettingAutoClear', 'Automatically clear the debug console when you click the print solution or hint buttons')
-    ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingPattern', 'Pattern', nil, { '\u{f0fe} (ez)', '\u{f0fe}', '\u{f2d3}', '\u{f2d3} (alt)' }, 1, true)
+    ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingPattern', 'Pattern', nil, { '\u{f0fe} (default)', '\u{f0fe} (no center)', '\u{f0fe} (no edges)', '\u{f2d3} (default)', '\u{f2d3} (no center)', '\u{f2d3} (no edges)' }, 0, true)
     ImGui.AddCallback('shenanigansCmbLightsOutSettingPattern', ImGuiCallback.DeactivatedAfterEdit, function(i)
-      -- the ez variant causes the light chasing algorithm to auto solve every board
-      if i == 0 or i == 1 then -- +
+      -- the + (no center) variant causes the light chasing algorithm to auto solve every board
+      if i >= 0 and i <= 2 then -- +
         mod.pattern.topLeft = false
         mod.pattern.top = true
         mod.pattern.topRight = false
         mod.pattern.left = true
-        mod.pattern.center = i == 1
+        mod.pattern.center = i ~= 1
         mod.pattern.right = true
         mod.pattern.bottomLeft = false
         mod.pattern.bottom = true
         mod.pattern.bottomRight = false
         mod.shape = mod.square
+        mod.boardHasEdges = i ~= 2
       else -- x
         mod.pattern.topLeft = true
         mod.pattern.top = false
         mod.pattern.topRight = true
         mod.pattern.left = false
-        mod.pattern.center = i == 2
+        mod.pattern.center = i ~= 4
         mod.pattern.right = false
         mod.pattern.bottomLeft = true
         mod.pattern.bottom = false
         mod.pattern.bottomRight = true
         mod.shape = mod.diamond
+        mod.boardHasEdges = i ~= 5
       end
       for _, v in ipairs({
-                          { w = 2, h = 2 },
                           { w = 3, h = 3 },
                           { w = 4, h = 4 },
                           { w = 5, h = 5 },
@@ -109,12 +109,11 @@ if REPENTOGON then
         mod:resetSquares(mod.globalData[s], s, v.w, v.h)
       end
     end)
-    ImGui.SetHelpmarker('shenanigansCmbLightsOutSettingPattern', 'Changing this will reset your boards\n(ez/alt: do not toggle clicked square)')
+    ImGui.SetHelpmarker('shenanigansCmbLightsOutSettingPattern', 'Changing this will reset your boards')
     ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingSize', 'Size', nil, { 40, 50, 60 }, 1, true)
     ImGui.AddCallback('shenanigansCmbLightsOutSettingSize', ImGuiCallback.DeactivatedAfterEdit, function(_, s)
       mod.squareSize = tonumber(s)
       for _, v in ipairs({
-                          { w = 2, h = 2 },
                           { w = 3, h = 3 },
                           { w = 4, h = 4 },
                           { w = 5, h = 5 },
@@ -202,6 +201,7 @@ if REPENTOGON then
     for i = 1, total do
       if (
            -- with a + pattern on an odd NxN board, if we don't toggle the clicked square then we need to leave the center square empty
+           mod.boardHasEdges and
            not mod.pattern.topLeft and mod.pattern.top and not mod.pattern.topRight and
            mod.pattern.left and not mod.pattern.center and mod.pattern.right and
            not mod.pattern.bottomLeft and mod.pattern.bottom and not mod.pattern.bottomRight and
@@ -212,6 +212,7 @@ if REPENTOGON then
            -- you can fill in two additional squares by toggling the following positions after this loop is complete:
            --   total - math.floor(total / 2) - w - 1
            --   total - math.floor(total / 2) + w + 1
+           mod.boardHasEdges and
            mod.pattern.topLeft and not mod.pattern.top and mod.pattern.topRight and
            not mod.pattern.left and not mod.pattern.center and not mod.pattern.right and
            mod.pattern.bottomLeft and not mod.pattern.bottom and mod.pattern.bottomRight and
@@ -232,20 +233,24 @@ if REPENTOGON then
   end
   
   function mod:toggleSquares(data, i, s, w, h)
-    local hasSquareLeft = mod:hasSquareLeft(i, w, h)
-    local hasSquareRight = mod:hasSquareRight(i, w, h)
-    local hasSquareUp = mod:hasSquareUp(i, w, h)
-    local hasSquareDown = mod:hasSquareDown(i, w, h)
+    local squareUpLeft = mod:getSquareUpLeft(i, w, h)
+    local squareUp = mod:getSquareUp(i, w, h)
+    local squareUpRight = mod:getSquareUpRight(i, w, h)
+    local squareLeft = mod:getSquareLeft(i, w, h)
+    local squareRight = mod:getSquareRight(i, w, h)
+    local squareDownLeft = mod:getSquareDownLeft(i, w, h)
+    local squareDown = mod:getSquareDown(i, w, h)
+    local squareDownRight = mod:getSquareDownRight(i, w, h)
     for _, v in ipairs({
-                        { cond = mod.pattern.topLeft and hasSquareUp and hasSquareLeft, idx = i - w - 1 },
-                        { cond = mod.pattern.top and hasSquareUp, idx = i - w },
-                        { cond = mod.pattern.topRight and hasSquareUp and hasSquareRight, idx = i - w + 1 },
-                        { cond = mod.pattern.left and hasSquareLeft, idx = i - 1 },
+                        { cond = mod.pattern.topLeft and squareUpLeft, idx = squareUpLeft },
+                        { cond = mod.pattern.top and squareUp, idx = squareUp },
+                        { cond = mod.pattern.topRight and squareUpRight, idx = squareUpRight },
+                        { cond = mod.pattern.left and squareLeft, idx = squareLeft },
                         { cond = mod.pattern.center, idx = i },
-                        { cond = mod.pattern.right and hasSquareRight, idx = i + 1 },
-                        { cond = mod.pattern.bottomLeft and hasSquareDown and hasSquareLeft, idx = i + w - 1 },
-                        { cond = mod.pattern.bottom and hasSquareDown, idx = i + w },
-                        { cond = mod.pattern.bottomRight and hasSquareDown and hasSquareRight, idx = i + w + 1 },
+                        { cond = mod.pattern.right and squareRight, idx = squareRight },
+                        { cond = mod.pattern.bottomLeft and squareDownLeft, idx = squareDownLeft },
+                        { cond = mod.pattern.bottom and squareDown, idx = squareDown },
+                        { cond = mod.pattern.bottomRight and squareDownRight, idx = squareDownRight },
                       })
     do
       if v.cond then
@@ -266,20 +271,24 @@ if REPENTOGON then
       table.insert(matrix, {})
     end
     for i = 1, total do
-      local hasSquareLeft = mod:hasSquareLeft(i, w, h)
-      local hasSquareRight = mod:hasSquareRight(i, w, h)
-      local hasSquareUp = mod:hasSquareUp(i, w, h)
-      local hasSquareDown = mod:hasSquareDown(i, w, h)
+      local squareUpLeft = mod:getSquareUpLeft(i, w, h)
+      local squareUp = mod:getSquareUp(i, w, h)
+      local squareUpRight = mod:getSquareUpRight(i, w, h)
+      local squareLeft = mod:getSquareLeft(i, w, h)
+      local squareRight = mod:getSquareRight(i, w, h)
+      local squareDownLeft = mod:getSquareDownLeft(i, w, h)
+      local squareDown = mod:getSquareDown(i, w, h)
+      local squareDownRight = mod:getSquareDownRight(i, w, h)
       for j = 1, total do
-        if (mod.pattern.topLeft and hasSquareUp and hasSquareLeft and j == i - w - 1) or
-           (mod.pattern.top and hasSquareUp and j == i - w) or
-           (mod.pattern.topRight and hasSquareUp and hasSquareRight and j == i - w + 1) or
-           (mod.pattern.left and hasSquareLeft and j == i - 1) or
+        if (mod.pattern.topLeft and j == squareUpLeft) or
+           (mod.pattern.top and j == squareUp) or
+           (mod.pattern.topRight and j == squareUpRight) or
+           (mod.pattern.left and j == squareLeft) or
            (mod.pattern.center and j == i) or
-           (mod.pattern.right and hasSquareRight and j == i + 1) or
-           (mod.pattern.bottomLeft and hasSquareDown and hasSquareLeft and j == i + w - 1) or
-           (mod.pattern.bottom and hasSquareDown and j == i + w) or
-           (mod.pattern.bottomRight and hasSquareDown and hasSquareRight and j == i + w + 1)
+           (mod.pattern.right and j == squareRight) or
+           (mod.pattern.bottomLeft and j == squareDownLeft) or
+           (mod.pattern.bottom and j == squareDown) or
+           (mod.pattern.bottomRight and j == squareDownRight)
         then
           matrix[i][j] = 1
         else
@@ -375,6 +384,109 @@ if REPENTOGON then
       end
     end
     return true
+  end
+  
+  function mod:getSquareLeftOffset(i, w, h)
+    if mod:hasSquareLeft(i, w, h) then
+      return -1
+    elseif not mod.boardHasEdges then
+      return w - 1
+    end
+    return nil
+  end
+  
+  function mod:getSquareLeft(i, w, h)
+    local offset = mod:getSquareLeftOffset(i, w, h)
+    if offset then
+      return i + offset
+    end
+    return nil
+  end
+  
+  function mod:getSquareRightOffset(i, w, h)
+    if mod:hasSquareRight(i, w, h) then
+      return 1
+    elseif not mod.boardHasEdges then
+      return -w + 1
+    end
+    return nil
+  end
+  
+  function mod:getSquareRight(i, w, h)
+    local offset = mod:getSquareRightOffset(i, w, h)
+    if offset then
+      return i + offset
+    end
+    return nil
+  end
+  
+  function mod:getSquareUpOffset(i, w, h)
+    if mod:hasSquareUp(i, w, h) then
+      return -w
+    elseif not mod.boardHasEdges then
+      return w * (h - 1)
+    end
+    return nil
+  end
+  
+  function mod:getSquareUp(i, w, h)
+    local offset = mod:getSquareUpOffset(i, w, h)
+    if offset then
+      return i + offset
+    end
+    return nil
+  end
+  
+  function mod:getSquareDownOffset(i, w, h)
+    if mod:hasSquareDown(i, w, h) then
+      return w
+    elseif not mod.boardHasEdges then
+      return -(w * (h - 1))
+    end
+  end
+  
+  function mod:getSquareDown(i, w, h)
+    local offset = mod:getSquareDownOffset(i, w, h)
+    if offset then
+      return i + offset
+    end
+    return nil
+  end
+  
+  function mod:getSquareUpLeft(i, w, h)
+    local offsetUp = mod:getSquareUpOffset(i, w, h)
+    local offsetLeft = mod:getSquareLeftOffset(i, w, h)
+    if offsetUp and offsetLeft then
+      return i + offsetUp + offsetLeft
+    end
+    return nil
+  end
+  
+  function mod:getSquareUpRight(i, w, h)
+    local offsetUp = mod:getSquareUpOffset(i, w, h)
+    local offsetRight = mod:getSquareRightOffset(i, w, h)
+    if offsetUp and offsetRight then
+      return i + offsetUp + offsetRight
+    end
+    return nil
+  end
+  
+  function mod:getSquareDownLeft(i, w, h)
+    local offsetDown = mod:getSquareDownOffset(i, w, h)
+    local offsetLeft = mod:getSquareLeftOffset(i, w, h)
+    if offsetDown and offsetLeft then
+      return i + offsetDown + offsetLeft
+    end
+    return nil
+  end
+  
+  function mod:getSquareDownRight(i, w, h)
+    local offsetDown = mod:getSquareDownOffset(i, w, h)
+    local offsetRight = mod:getSquareRightOffset(i, w, h)
+    if offsetDown and offsetRight then
+      return i + offsetDown + offsetRight
+    end
+    return nil
   end
   
   function mod:hasSquareLeft(i, w, h)
