@@ -45,6 +45,7 @@ if REPENTOGON then
     ImGui.LinkWindowToElement('shenanigansWindowLightsOut', 'shenanigansMenuItemLightsOut')
     
     ImGui.AddTabBar('shenanigansWindowLightsOut', 'shenanigansTabBarLightsOut')
+    ImGui.AddTab('shenanigansTabBarLightsOut', 'shenanigansTabLightsOut2x2', '2x2')
     ImGui.AddTab('shenanigansTabBarLightsOut', 'shenanigansTabLightsOut3x3', '3x3')
     ImGui.AddTab('shenanigansTabBarLightsOut', 'shenanigansTabLightsOut4x4', '4x4')
     ImGui.AddTab('shenanigansTabBarLightsOut', 'shenanigansTabLightsOut5x5', '5x5')
@@ -54,6 +55,7 @@ if REPENTOGON then
     ImGui.AddTab('shenanigansTabBarLightsOut', 'shenanigansTabLightsOut9x9', '9x9')
     ImGui.AddTab('shenanigansTabBarLightsOut', 'shenanigansTabLightsOutSettings', 'Settings')
     
+    mod:setupBoard(2, 2)
     mod:setupBoard(3, 3)
     mod:setupBoard(4, 4)
     mod:setupBoard(5, 5)
@@ -96,6 +98,7 @@ if REPENTOGON then
         mod.boardHasEdges = i ~= 5
       end
       for _, v in ipairs({
+                          { w = 2, h = 2 },
                           { w = 3, h = 3 },
                           { w = 4, h = 4 },
                           { w = 5, h = 5 },
@@ -114,6 +117,7 @@ if REPENTOGON then
     ImGui.AddCallback('shenanigansCmbLightsOutSettingSize', ImGuiCallback.DeactivatedAfterEdit, function(_, s)
       mod.squareSize = tonumber(s)
       for _, v in ipairs({
+                          { w = 2, h = 2 },
                           { w = 3, h = 3 },
                           { w = 4, h = 4 },
                           { w = 5, h = 5 },
@@ -241,6 +245,7 @@ if REPENTOGON then
     local squareDownLeft = mod:getSquareDownLeft(i, w, h)
     local squareDown = mod:getSquareDown(i, w, h)
     local squareDownRight = mod:getSquareDownRight(i, w, h)
+    local indexes = {}
     for _, v in ipairs({
                         { cond = mod.pattern.topLeft and squareUpLeft, idx = squareUpLeft },
                         { cond = mod.pattern.top and squareUp, idx = squareUp },
@@ -254,12 +259,15 @@ if REPENTOGON then
                       })
     do
       if v.cond then
-        data[v.idx] = not data[v.idx]
-        if data[v.idx] then
-          ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. v.idx, mod.shape)
-        else
-          ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. v.idx, '')
-        end
+        indexes[v.idx] = true -- make sure we don't double tap any indexes
+      end
+    end
+    for idx, _ in pairs(indexes) do
+      data[idx] = not data[idx]
+      if data[idx] then
+        ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. idx, mod.shape)
+      else
+        ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. idx, '')
       end
     end
   end

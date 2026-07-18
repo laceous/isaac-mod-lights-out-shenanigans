@@ -5,7 +5,7 @@
     <id>3690428817</id>
     <description>I decided to make another game to go with [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3652641151]Minesweeper Shenanigans[/url].
 
-This mod requires REPENTOGON. All boards are solvable. 4x4 is super easy if you need a place to start. The + (no center) variant causes the light chasing algorithm to automatically solve every board.
+This mod requires REPENTOGON. All boards are solvable. 2x2 and 4x4 are super easy if you need a place to start. The + (no center) variant causes the light chasing algorithm to automatically solve every board.
 
 There's an option to print a solution to the debug console if you get stuck. Click on all the 1's in any order to solve from the current state. The solution may not be optimal.
 
@@ -14,7 +14,7 @@ The 4 buttons at the top-left of the board are: reset, shuffle/randomize, print 
 More info: https://en.wikipedia.org/wiki/Lights_Out_(game)
 
 Update: You can change the pattern from a cross (+) to a cross (x). There's also variants with no centers (in the pattern) and no edges (on the board).</description>
-    <version>1.12</version>
+    <version>1.13</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
 </metadata>
