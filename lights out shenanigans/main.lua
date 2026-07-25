@@ -2,16 +2,30 @@ local mod = RegisterMod('Lights Out Shenanigans', 1)
 local sfx = SFXManager()
 
 -- current rule set:
---   2-state buttons, cross patterns, square boards, boards w/ and w/o edges
+--   2 and 3-state buttons, cross patterns (+ and x), square boards, boards w/ and w/o edges
 -- tutorials:
 --   https://www.logicgamesonline.com/lightsout/tutorial.html
 --   https://github.com/robert-wallis/LightsOut-6x6-Trainer
 --   https://www.jaapsch.net/puzzles/lights.htm
 if REPENTOGON then
   mod.rngShiftIdx = 35
-  mod.square = '\u{f45c}'
-  mod.diamond = '\u{f219}'
-  mod.shape = mod.square
+  mod.shapes = {
+    square = {
+      [1] = '\u{f45c}', -- square
+    },
+    diamond = {
+      [1] = '\u{f219}', -- diamond
+    },
+    circle = {
+      [1] = '\u{f1ce}', -- circle notch
+      [2] = '\u{f111}', -- circle
+    },
+    wrench = {
+      [1] = '\u{f0ad}', -- wrench
+      [2] = '\u{f7d9}', -- screwdriver wrench
+    },
+  }
+  mod.shape = 'square'
   mod.globalData = {}
   
   mod.pattern = { -- +
@@ -26,6 +40,7 @@ if REPENTOGON then
     bottomRight = false,
   }
   mod.squareSize = 50 -- 40, 50, 60
+  mod.base = 2
   mod.boardHasEdges = true
   mod.autoClear = false
   
@@ -69,10 +84,10 @@ if REPENTOGON then
       mod.autoClear = i == 1
     end, { 'Off', 'On' }, mod.autoClear and 1 or 0, true)
     ImGui.SetHelpmarker('shenanigansCmbLightsOutSettingAutoClear', 'Automatically clear the debug console when you click the print solution or hint buttons')
-    ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingPattern', 'Pattern', nil, { '\u{f0fe} (default)', '\u{f0fe} (no center)', '\u{f0fe} (no edges)', '\u{f2d3} (default)', '\u{f2d3} (no center)', '\u{f2d3} (no edges)' }, 0, true)
+    ImGui.AddCombobox('shenanigansTabLightsOutSettings', 'shenanigansCmbLightsOutSettingPattern', 'Pattern', nil, { '\u{f0fe} (default)', '\u{f0fe} (no center)', '\u{f0fe} (no edges)', '\u{f0fe} (3 state)', '\u{f2d3} (default)', '\u{f2d3} (no center)', '\u{f2d3} (no edges)', '\u{f2d3} (3 state)' }, 0, true)
     ImGui.AddCallback('shenanigansCmbLightsOutSettingPattern', ImGuiCallback.DeactivatedAfterEdit, function(i)
       -- the + (no center) variant causes the light chasing algorithm to auto solve every board
-      if i >= 0 and i <= 2 then -- +
+      if i >= 0 and i <= 3 then -- +
         mod.pattern.topLeft = false
         mod.pattern.top = true
         mod.pattern.topRight = false
@@ -82,20 +97,22 @@ if REPENTOGON then
         mod.pattern.bottomLeft = false
         mod.pattern.bottom = true
         mod.pattern.bottomRight = false
-        mod.shape = mod.square
         mod.boardHasEdges = i ~= 2
+        mod.base = i == 3 and 3 or 2
+        mod.shape = i == 3 and 'circle' or 'square'
       else -- x
         mod.pattern.topLeft = true
         mod.pattern.top = false
         mod.pattern.topRight = true
         mod.pattern.left = false
-        mod.pattern.center = i ~= 4
+        mod.pattern.center = i ~= 5
         mod.pattern.right = false
         mod.pattern.bottomLeft = true
         mod.pattern.bottom = false
         mod.pattern.bottomRight = true
-        mod.shape = mod.diamond
-        mod.boardHasEdges = i ~= 5
+        mod.boardHasEdges = i ~= 6
+        mod.base = i == 7 and 3 or 2
+        mod.shape = i == 7 and 'wrench' or 'diamond'
       end
       for _, v in ipairs({
                           { w = 2, h = 2 },
@@ -161,6 +178,9 @@ if REPENTOGON then
         for i = 1, w * h do
           if rng:RandomFloat() < 0.5 then
             mod:toggleSquares(data, i, s, w, h)
+            if mod.base == 3 and rng:RandomFloat() < 0.5 then
+              mod:toggleSquares(data, i, s, w, h)
+            end
           end
         end
       until not mod:isSuccess(data)
@@ -181,7 +201,7 @@ if REPENTOGON then
         i = i + 1
         local iLocal = i
         local btnId = 'shenanigansBtn' .. s .. '_' .. iLocal
-        ImGui.AddButton(tab, btnId, mod.shape, function()
+        ImGui.AddButton(tab, btnId, '', function()
           mod:toggleSquares(data, iLocal, s, w, h)
           if mod:isSuccess(data) then
             ImGui.PushNotification('You win!', ImGuiNotificationType.SUCCESS, 5000)
@@ -205,7 +225,7 @@ if REPENTOGON then
     for i = 1, total do
       if (
            -- with a + pattern on an odd NxN board, if we don't toggle the clicked square then we need to leave the center square empty
-           mod.boardHasEdges and
+           mod.base == 2 and mod.boardHasEdges and
            not mod.pattern.topLeft and mod.pattern.top and not mod.pattern.topRight and
            mod.pattern.left and not mod.pattern.center and mod.pattern.right and
            not mod.pattern.bottomLeft and mod.pattern.bottom and not mod.pattern.bottomRight and
@@ -216,7 +236,7 @@ if REPENTOGON then
            -- you can fill in two additional squares by toggling the following positions after this loop is complete:
            --   total - math.floor(total / 2) - w - 1
            --   total - math.floor(total / 2) + w + 1
-           mod.boardHasEdges and
+           mod.base == 2 and mod.boardHasEdges and
            mod.pattern.topLeft and not mod.pattern.top and mod.pattern.topRight and
            not mod.pattern.left and not mod.pattern.center and not mod.pattern.right and
            mod.pattern.bottomLeft and not mod.pattern.bottom and mod.pattern.bottomRight and
@@ -227,11 +247,54 @@ if REPENTOGON then
            )
          )
       then
-        data[i] = false
+        data[i] = 0
         ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. i, '')
+      elseif (
+               -- + pattern, 3-state buttons, 2x2
+               mod.base == 3 and mod.boardHasEdges and
+               not mod.pattern.topLeft and mod.pattern.top and not mod.pattern.topRight and
+               mod.pattern.left and mod.pattern.center and mod.pattern.right and
+               not mod.pattern.bottomLeft and mod.pattern.bottom and not mod.pattern.bottomRight and
+               w == 2 and h == 2 and mod:tblHasVal({2, 3}, i) -- alt: 1, 4
+             ) or
+             (
+               -- + pattern, 3-state buttons, 3x3
+               mod.base == 3 and mod.boardHasEdges and
+               not mod.pattern.topLeft and mod.pattern.top and not mod.pattern.topRight and
+               mod.pattern.left and mod.pattern.center and mod.pattern.right and
+               not mod.pattern.bottomLeft and mod.pattern.bottom and not mod.pattern.bottomRight and
+               w == 3 and h == 3 and math.ceil(total / 2) == i
+             ) or
+             (
+               -- + pattern, 3-state buttons, 8x8
+               mod.base == 3 and mod.boardHasEdges and
+               not mod.pattern.topLeft and mod.pattern.top and not mod.pattern.topRight and
+               mod.pattern.left and mod.pattern.center and mod.pattern.right and
+               not mod.pattern.bottomLeft and mod.pattern.bottom and not mod.pattern.bottomRight and
+               w == 8 and h == 8 and mod:tblHasVal({1, 3, 4, 5, 6, 8, 17, 24, 25, 32, 33, 40, 41, 48, 57, 59, 60, 61, 62, 64}, i)
+             ) or
+             (
+               -- x pattern, 3-state buttons, 3x3
+               mod.base == 3 and mod.boardHasEdges and
+               mod.pattern.topLeft and not mod.pattern.top and mod.pattern.topRight and
+               not mod.pattern.left and mod.pattern.center and not mod.pattern.right and
+               mod.pattern.bottomLeft and not mod.pattern.bottom and mod.pattern.bottomRight and
+               w == 3 and h == 3 and mod:tblHasVal({4, 6}, i) -- alt: 2, 8
+             ) or
+             (
+               -- x pattern, 3-state buttons, 4x4
+               mod.base == 3 and mod.boardHasEdges and
+               mod.pattern.topLeft and not mod.pattern.top and mod.pattern.topRight and
+               not mod.pattern.left and mod.pattern.center and not mod.pattern.right and
+               mod.pattern.bottomLeft and not mod.pattern.bottom and mod.pattern.bottomRight and
+               w == 4 and h == 4 and mod:tblHasVal({6, 7, 10, 11}, i)
+             )
+      then
+        data[i] = 1
+        ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. i, mod.shapes[mod.shape][data[i]])
       else
-        data[i] = true
-        ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. i, mod.shape)
+        data[i] = mod.base - 1
+        ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. i, mod.shapes[mod.shape][data[i]])
       end
     end
   end
@@ -263,11 +326,11 @@ if REPENTOGON then
       end
     end
     for idx, _ in pairs(indexes) do
-      data[idx] = not data[idx]
-      if data[idx] then
-        ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. idx, mod.shape)
-      else
+      data[idx] = (data[idx] - 1) % mod.base -- our base is positive so this will return positive even if the first number is negative
+      if data[idx] == 0 then
         ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. idx, '')
+      else
+        ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. idx, mod.shapes[mod.shape][data[idx]])
       end
     end
   end
@@ -305,10 +368,10 @@ if REPENTOGON then
       end
     end
     for i = 1, total do
-      table.insert(matrix[i], data[i] and 1 or 0)
+      table.insert(matrix[i], data[i])
     end
     
-    mod:doGaussJordanEliminationMod2(matrix)
+    mod:doGaussJordanEliminationModX(matrix)
     --[[
     for i = 1, #matrix do
       print(table.concat(matrix[i], ' '))
@@ -351,43 +414,66 @@ if REPENTOGON then
   end
   
   -- thanks to linear algebra youtube for turning me onto this solution
-  -- thanks to chatgpt for an initial lua example
-  -- this is a mod 2 system so 1+1=0
+  -- thanks to chatgpt/claude for some initial lua examples
+  -- this is a mod 2 or mod 3 system so 1+1=0 or 1+1+1=0
   -- you can use either:
   --   gaussian elimination to put the matrix in row echelon form, solve via back substitution
   --   gauss jordan elimination to put the matrix in reduced row echelon form, check the final column
-  -- gaussian elimination is slightly faster but the timescale is ridiculously small
-  -- gauss jordan elimination had simpler code so i used that
-  -- 4x4/5x5/9x9 struggle to find the optimal solution using this method when you get to the final row (+ pattern)
+  -- gaussian elimination is slightly faster but the timescale is ridiculously small (nano time)
+  -- gauss jordan elimination gives you the solution directly in the matrix so it's easier to follow along
   -- another youtube video showed solving this via network theory to find the optimal solution
   -- that would likely require pre-generating data and increasing the size of the mod
-  function mod:doGaussJordanEliminationMod2(matrix)
+  function mod:doGaussJordanEliminationModX(matrix)
     local numRows = #matrix
     local numCols = #matrix[1]
     
-    for i = 1, numRows do
-      local pivot = i
-      while pivot <= numRows and matrix[pivot][i] == 0 do
-        pivot = pivot + 1
-      end
-      if pivot <= numRows then
-        if pivot ~= i then
-          matrix[i], matrix[pivot] = matrix[pivot], matrix[i]
+    local row = 1
+    for col = 1, numCols do
+      local pivot = nil
+      for r = row, numRows do
+        if matrix[r][col] ~= 0 then
+          pivot = r
+          break
         end
-        for j = 1, numRows do
-          if j ~= i and matrix[j][i] == 1 then
-            for k = 1, numCols do
-              matrix[j][k] = (matrix[j][k] + matrix[i][k]) % 2
+      end
+      
+      if pivot then
+        matrix[row], matrix[pivot] = matrix[pivot], matrix[row]
+        
+        local inv = matrix[row][col]
+        for c = col, numCols do
+          matrix[row][c] = (matrix[row][c] * inv) % mod.base
+        end
+        
+        for r = 1, numRows do
+          if r ~= row and matrix[r][col] ~= 0 then
+            local factor = matrix[r][col]
+            for c = col, numCols do
+              matrix[r][c] = (matrix[r][c] - factor * matrix[row][c]) % mod.base
             end
           end
+        end
+        
+        row = row + 1
+        if row > numRows then
+          return
         end
       end
     end
   end
   
+  function mod:tblHasVal(tbl, val)
+    for _, v in ipairs(tbl) do
+      if v == val then
+        return true
+      end
+    end
+    return false
+  end
+  
   function mod:isSuccess(data)
     for _, v in pairs(data) do
-      if v then
+      if v > 0 then
         return false
       end
     end
