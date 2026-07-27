@@ -453,11 +453,11 @@ if REPENTOGON then
             end
           end
         end
-        
-        row = row + 1
-        if row > numRows then
-          return
-        end
+      end
+      
+      row = row + 1
+      if row > numRows then
+        break
       end
     end
   end
