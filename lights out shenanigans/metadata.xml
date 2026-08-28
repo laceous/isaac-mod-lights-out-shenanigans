@@ -16,7 +16,7 @@ More info: https://en.wikipedia.org/wiki/Lights_Out_(game)
 Update: You can change the pattern from a cross (+) to a cross (x). There's also variants with no centers (in the pattern) and no edges (on the board).
 
 Update x2: There's now 3-state variants. The solution for these will show 0, 1, or 2; indicating how many times to click each button.</description>
-    <version>1.15</version>
+    <version>1.16</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
 </metadata>

@@ -327,11 +327,7 @@ if REPENTOGON then
     end
     for idx, _ in pairs(indexes) do
       data[idx] = (data[idx] - 1) % mod.base -- our base is positive so this will return positive even if the first number is negative
-      if data[idx] == 0 then
-        ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. idx, '')
-      else
-        ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. idx, mod.shapes[mod.shape][data[idx]])
-      end
+      ImGui.UpdateText('shenanigansBtn' .. s .. '_' .. idx, data[idx] == 0 and '' or mod.shapes[mod.shape][data[idx]])
     end
   end
   
